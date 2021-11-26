@@ -1,3 +1,7 @@
+
 body {
   background: url(./block_title.png) no-repeat;
+  display: flex;
+  transform:translateZ(0);
+  backface-visibility: hidden;
 }

@@ -1,7 +1,10 @@
 const path = require("path")
 const fs = require("fs");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const postcssPresetEnv = require('postcss-preset-env');
+const TerserPlugin = require('terser-webpack-plugin');
+const { resolve } = require("path");
 
 // src/pages 目录为页面入口的根目录
 const pagesRoot = path.resolve(__dirname, "./src/pages");
@@ -14,7 +17,10 @@ const entries = fs.readdirSync(pagesRoot).reduce((entries, page) => {
 
 module.exports = {
   mode: "production", // 指定构建模式
-  entry: entries, // 将 entries 对象作为入口配置
+  // entry: entries, // 将 entries 对象作为入口配置
+  entry: {
+    main: './src/index.js' // main 为 entry 的名称
+  },
   output: {
     filename: 'static/js/[name].[contenthash:8].js', // 使用 [name] 来引用 entry 名称，在这里即为 main
     path: path.join(__dirname, '/dist'),
@@ -24,6 +30,12 @@ module.exports = {
   devServer: {
     static: path.resolve(__dirname, "dist") // 开发服务器启动路径
   },
+  optimization: {
+    minimize: true,
+    minimizer: [new TerserPlugin({
+      test: /\.js(\?.*)?$/i, // 只处理 .js 文件
+    })], // 配置代码压缩工具
+  },
   plugins: [
     new MiniCssExtractPlugin({
       filename: "static/css/[name].[contenthash:8].css"
@@ -31,16 +43,39 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "src/index.html", // 配置文件模板
     }),
+    new webpack.DefinePlugin({
+      //定义环境变量
+    }),
+    // 这个插件用于忽略某些特定的模块，让 webpack 不把这些指定的模块打包进去。例如我们使用 moment.js，直接引用后，里边有大量的 i18n 的代码，导致最后打包出来的文件比较大，而实际场景并不需要这些 i18n 的代码，这时我们可以使用 IgnorePlugin 来忽略掉这些代码文件，配置如下：
+    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
   ],
   module: {
     rules: [
       {
         test: /\.css$/, 
-        use: [MiniCssExtractPlugin.loader,"css-loader"]
+        use: [MiniCssExtractPlugin.loader,"css-loader", {
+          loader: "postcss-loader",
+          options: {
+            postcssOptions: {
+              plugins: [postcssPresetEnv({
+                autoprefixer: { grid: true }
+              })],
+            }
+          }
+        }]
       },
       {
         test: /\.scss$/, 
-        use: [MiniCssExtractPlugin.loader,"css-loader", "sass-loader"],
+        use: [MiniCssExtractPlugin.loader,"css-loader", {
+          loader: "postcss-loader",
+          options: {
+            postcssOptions: {
+              plugins: [postcssPresetEnv({
+                autoprefixer: { grid: true }
+              })],
+            }
+          }
+        }, "sass-loader"],
       },
       {
         test: /\.(png|jpg|gif)$/, 
@@ -53,7 +88,7 @@ module.exports = {
             esModule: false,
           },
         }],
-        type: "javascript/auto"
+        type: "javascript/auto" // webpack 3 默认的类型，支持现有的各种 JS 代码模块类型 —— CommonJS、AMD、ESM
       },
       {
         test: /\.jsx$/,
@@ -69,5 +104,23 @@ module.exports = {
       }
 
     ]
+  },
+  resolve: {
+    modules: [
+      path.resolve(__dirname, 'node_modules'), // 指定当前目录下的 node_modules 优先查找
+      'node_modules', // 如果有一些类库是放在一些奇怪的地方的，你可以添加自定义的路径或者目录
+    ],
+    alias: {
+      "@": "src",
+      "@components": "src/components",   
+    },
+    extensions: [
+      '.mjs',
+      '.js',
+      '.ts',
+      '.tsx',
+      '.json',
+      '.jsx',
+    ],
   }
 }
