@@ -18,7 +18,8 @@
   },
   "scripts": {
     "build": "webpack",
-    "serve": "webpack-dev-server"
+    "build:pro": "webpack --env.production",
+    "serve": "webpack-dev-server --hot"
   },
   "browserslist": {
     "production": [

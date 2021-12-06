@@ -15,13 +15,12 @@ const entries = fs.readdirSync(pagesRoot).reduce((entries, page) => {
   return entries
 }, {});
 
-module.exports = (env,argv) => ({
-  // 指定构建模式
-  mode: env.production ? 'production' : 'development', // 从 env 参数获取 mode
-  entry: entries, // 将 entries 对象作为入口配置
-  // entry: {
-  //   main: './src/index.js' // main 为 entry 的名称
-  // },
+module.exports = {
+  mode: "production", // 指定构建模式
+  // entry: entries, // 将 entries 对象作为入口配置
+  entry: {
+    main: './src/index.js' // main 为 entry 的名称
+  },
   output: {
     filename: 'static/js/[name].[contenthash:8].js', // 使用 [name] 来引用 entry 名称，在这里即为 main
     path: path.join(__dirname, '/dist'),
@@ -33,7 +32,6 @@ module.exports = (env,argv) => ({
     // HMR
     hot: true
   },
-  devtool: env.production ? false : 'eval-cheap-source-map', // 开发环境需要 source map
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin({
@@ -141,4 +139,4 @@ module.exports = (env,argv) => ({
       '.jsx',
     ],
   }
-})
+}
